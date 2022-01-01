@@ -1,0 +1,1 @@
+{"version":3,"file":"MongoDocSchema.js","sourceRoot":"","sources":["../../src/lib/MongoDocSchema.ts"],"names":[],"mappings":";;;AAAA,uCAAkC;AAErB,QAAA,cAAc,GAAW,IAAI,iBAAM,CAAC;IAChD,GAAG,EAAE,EAAE,IAAI,EAAE,MAAM,EAAE,QAAQ,EAAE,IAAI,EAAE;IACrC,KAAK,EAAE,EAAE,IAAI,EAAE,iBAAM,CAAC,KAAK,CAAC,KAAK,EAAE,QAAQ,EAAE,IAAI,EAAE;CACnD,CAAC,CAAC"}
