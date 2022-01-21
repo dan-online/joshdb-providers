@@ -1,1 +1,0 @@
-{"version":3,"file":"MongoDocType.d.ts","sourceRoot":"","sources":["../../src/lib/MongoDocType.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,QAAQ,EAAE,MAAM,UAAU,CAAC;AAEzC,MAAM,WAAW,YAAa,SAAQ,QAAQ;IAC7C,GAAG,EAAE,MAAM,CAAC;IACZ,KAAK,EAAE,OAAO,CAAC;CACf"}
