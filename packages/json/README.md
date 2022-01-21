@@ -5,8 +5,19 @@
 **A provider for `@joshdb/core`**
 
 [![GitHub](https://img.shields.io/github/license/RealShadowNova/joshdb-providers)](https://github.com/RealShadowNova/joshdb-providers/blob/main/LICENSE)
+[![npm](https://img.shields.io/npm/v/@joshdb/json?color=crimson&logo=npm&style=flat-square&label=@joshdb/json)](https://www.npmjs.com/package/@joshdb/json)
 
 </div>
+
+## Description
+
+Want to safely store your data in JSON files? This is the package for you.
+
+## Features
+
+- Written in TypeScript
+- Offers CommonJS and ESM bundles
+- Fully tested
 
 ## Installation
 
