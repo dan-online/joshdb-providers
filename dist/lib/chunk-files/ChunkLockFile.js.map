@@ -1,1 +1,0 @@
-{"version":3,"file":"ChunkLockFile.js","sourceRoot":"","sources":["../../../src/lib/chunk-files/ChunkLockFile.ts"],"names":[],"mappings":";;;AAAA,kCAA+B;AAE/B,MAAa,aAAqC,SAAQ,WAAiB;IAC1E,YAAmB,OAA8B;QAChD,MAAM,EAAE,SAAS,EAAE,EAAE,EAAE,KAAK,EAAE,GAAG,OAAO,CAAC;QAEzC,KAAK,CAAC,EAAE,SAAS,EAAE,IAAI,EAAE,SAAS,EAAE,YAAY,EAAE,KAAK,EAAE,CAAC,CAAC;IAC5D,CAAC;CACD;AAND,sCAMC"}
