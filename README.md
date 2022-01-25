@@ -1,5 +1,7 @@
 <div align="center">
 
+![Josh Logo](https://evie.codes/josh-light.png)
+
 # Josh Providers
 
 **Official providers for the Josh project.**
