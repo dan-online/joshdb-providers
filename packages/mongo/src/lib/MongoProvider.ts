@@ -62,7 +62,6 @@ import {
 import { deleteFromObject, getFromObject } from '@realware/utilities';
 import { isNullOrUndefined, isNumber, isPrimitive } from '@sapphire/utilities';
 import mongoose, { Model, Mongoose } from 'mongoose';
-import { v4 } from 'uuid';
 import { generateMongoDoc } from './MongoDoc';
 import type { MongoDocType } from './MongoDocType';
 import { MongoProviderError } from './MongoProviderError';
@@ -83,7 +82,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 	public async init(context: JoshProvider.Context<StoredValue>): Promise<JoshProvider.Context<StoredValue>> {
 		context = await super.init(context);
 
-		const { collectionName = this.instance?.name, enforceCollectionName, authentication = MongoProvider.defaultAuthentication } = this.options;
+		const { collectionName = context.name, enforceCollectionName, authentication = MongoProvider.defaultAuthentication } = this.options;
 
 		if (collectionName === undefined)
 			throw new JoshError({
@@ -116,7 +115,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 	}
 
 	public [Method.AutoKey](payload: AutoKeyPayload): AutoKeyPayload {
-		payload.data = v4();
+		payload.data = new mongoose.Types.ObjectId().toString();
 
 		return payload;
 	}
@@ -133,7 +132,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 
 		if (data === undefined) {
 			payload.error = new MongoProviderError({
-				identifier: MongoProvider.Identifiers.DecMissingData,
+				identifier: MongoProvider.CommonIdentifiers.DecMissingData,
 				message: path.length === 0 ? `The data at "${key}" does not exist.` : `The data at "${key}.${path.join('.')}" does not exist.`,
 				method: Method.Dec
 			});
@@ -143,7 +142,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 
 		if (!isNumber(data)) {
 			payload.error = new MongoProviderError({
-				identifier: MongoProvider.Identifiers.DecInvalidType,
+				identifier: MongoProvider.CommonIdentifiers.DecInvalidType,
 				message:
 					path.length === 0 ? `The data at "${key}" must be of type "number".` : `The data at "${key}.${path.join('.')}" must be of type "number".`,
 				method: Method.Dec
@@ -245,7 +244,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 
 			if (!isPrimitive(value)) {
 				payload.error = new MongoProviderError({
-					identifier: MongoProvider.Identifiers.FilterInvalidValue,
+					identifier: MongoProvider.CommonIdentifiers.FilterInvalidValue,
 					message: 'The "value" must be a primitive type.',
 					method: Method.Filter
 				});
@@ -282,7 +281,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 
 			if (!isPrimitive(value)) {
 				payload.error = new MongoProviderError({
-					identifier: MongoProvider.Identifiers.FindInvalidValue,
+					identifier: MongoProvider.CommonIdentifiers.FindInvalidValue,
 					message: 'The "value" must be of type primitive.',
 					method: Method.Find
 				});
@@ -356,7 +355,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 
 		if (data === undefined) {
 			payload.error = new MongoProviderError({
-				identifier: MongoProvider.Identifiers.IncMissingData,
+				identifier: MongoProvider.CommonIdentifiers.IncMissingData,
 				message: path.length === 0 ? `The data at "${key}" does not exist.` : `The data at "${key}.${path.join('.')}" does not exist.`,
 				method: Method.Inc
 			});
@@ -365,7 +364,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 		}
 		if (!isNumber(data)) {
 			payload.error = new MongoProviderError({
-				identifier: MongoProvider.Identifiers.IncInvalidType,
+				identifier: MongoProvider.CommonIdentifiers.IncInvalidType,
 				message:
 					path.length === 0 ? `The data at "${key}" must be of type "number".` : `The data at "${key}.${path.join('.')}" must be of type "number".`,
 				method: Method.Inc
@@ -418,7 +417,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 
 		if (data === undefined) {
 			payload.error = new MongoProviderError({
-				identifier: MongoProvider.Identifiers.MathMissingData,
+				identifier: MongoProvider.CommonIdentifiers.MathMissingData,
 				message: path.length === 0 ? `The data at "${key}" does not exist.` : `The data at "${key}.${path.join('.')}" does not exist.`,
 				method: Method.Math
 			});
@@ -428,7 +427,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 
 		if (!isNumber(data)) {
 			payload.error = new MongoProviderError({
-				identifier: MongoProvider.Identifiers.MathInvalidType,
+				identifier: MongoProvider.CommonIdentifiers.MathInvalidType,
 				message: path.length === 0 ? `The data at "${key}" must be a number.` : `The data at "${key}.${path.join('.')}" must be a number.`,
 				method: Method.Math
 			});
@@ -492,7 +491,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 
 			if (!isPrimitive(value)) {
 				payload.error = new MongoProviderError({
-					identifier: MongoProvider.Identifiers.PartitionInvalidValue,
+					identifier: MongoProvider.CommonIdentifiers.PartitionInvalidValue,
 					message: 'The "value" must be a primitive type.',
 					method: Method.Partition
 				});
@@ -514,7 +513,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 
 		if (data === undefined) {
 			payload.error = new MongoProviderError({
-				identifier: MongoProvider.Identifiers.PushMissingData,
+				identifier: MongoProvider.CommonIdentifiers.PushMissingData,
 				message: path.length === 0 ? `The data at "${key}" does not exist.` : `The data at "${key}.${path.join('.')}" does not exist.`,
 				method: Method.Push
 			});
@@ -524,7 +523,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 
 		if (!Array.isArray(data)) {
 			payload.error = new MongoProviderError({
-				identifier: MongoProvider.Identifiers.PushInvalidType,
+				identifier: MongoProvider.CommonIdentifiers.PushInvalidType,
 				message: path.length === 0 ? `The data at "${key}" must be an array.` : `The data at "${key}.${path.join('.')}" does not exist.`,
 				method: Method.Push
 			});
@@ -564,7 +563,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 
 			if (data === undefined) {
 				payload.error = new MongoProviderError({
-					identifier: MongoProvider.Identifiers.RemoveMissingData,
+					identifier: MongoProvider.CommonIdentifiers.RemoveMissingData,
 					message: path.length === 0 ? `The data at "${key}" does not exist.` : `The data at "${key}.${path.join('.')}" does not exist.`,
 					method: Method.Remove
 				});
@@ -574,7 +573,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 
 			if (!Array.isArray(data)) {
 				payload.error = new MongoProviderError({
-					identifier: MongoProvider.Identifiers.RemoveInvalidType,
+					identifier: MongoProvider.CommonIdentifiers.RemoveInvalidType,
 					message: path.length === 0 ? `The data at "${key}" must be an array.` : `The data at "${key}.${path.join('.')}" must be an array.`,
 					method: Method.Remove
 				});
@@ -593,7 +592,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 
 			if (data === undefined) {
 				payload.error = new MongoProviderError({
-					identifier: MongoProvider.Identifiers.RemoveMissingData,
+					identifier: MongoProvider.CommonIdentifiers.RemoveMissingData,
 					message: path.length === 0 ? `The data at "${key}" does not exist.` : `The data at "${key}.${path.join('.')}" does not exist.`,
 					method: Method.Remove
 				});
@@ -603,7 +602,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 
 			if (!Array.isArray(data)) {
 				payload.error = new MongoProviderError({
-					identifier: MongoProvider.Identifiers.RemoveInvalidType,
+					identifier: MongoProvider.CommonIdentifiers.RemoveInvalidType,
 					message: path.length === 0 ? `The data at "${key}" must be an array.` : `The data at "${key}.${path.join('.')}" must be an array.`,
 					method: Method.Remove
 				});
@@ -635,10 +634,10 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 		return payload;
 	}
 
-	public async [Method.SetMany](payload: SetManyPayload<StoredValue>): Promise<SetManyPayload<StoredValue>> {
-		const { keys, value } = payload;
+	public async [Method.SetMany]<Value = StoredValue>(payload: SetManyPayload<Value>): Promise<SetManyPayload<Value>> {
+		const { data } = payload;
 
-		for (const key of keys) await this.set({ key, value, path: [], method: Method.Set });
+		for (const [{ key, path }, value] of data) await this.set<Value>({ method: Method.Set, key, path, value });
 
 		return payload;
 	}
@@ -748,34 +747,8 @@ export namespace MongoProvider {
 	}
 
 	export enum Identifiers {
-		DecInvalidType = 'decInvalidType',
-
-		DecMissingData = 'decMissingData',
-
-		FilterInvalidValue = 'filterInvalidValue',
-
-		FindInvalidValue = 'findInvalidValue',
-
-		IncInvalidType = 'incInvalidType',
-
-		IncMissingData = 'incMissingData',
-
 		InitMissingCollectionName = 'initMissingCollectionName',
 
-		NotConnected = 'notConnected',
-
-		MathInvalidType = 'mathInvalidType',
-
-		MathMissingData = 'mathMissingData',
-
-		PartitionInvalidValue = 'partitionInvalidValue',
-
-		PushInvalidType = 'pushInvalidType',
-
-		PushMissingData = 'pushMissingData',
-
-		RemoveInvalidType = 'removeInvalidType',
-
-		RemoveMissingData = 'removeMissingData'
+		NotConnected = 'notConnected'
 	}
 }

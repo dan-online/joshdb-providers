@@ -1,12 +1,4 @@
 {
 	"extends": "./tsconfig.base.json",
-	"include": [
-		"jest.config.ts",
-		"packages/**/*.mjs",
-		"packages/**/*.ts",
-		"packages/**/jest.config.ts",
-		"packages/**/scripts/rollup.config.ts",
-		"packages/**/tests/*.ts",
-		"scripts"
-	]
+	"include": ["jest.config.ts", "packages/**/*.ts", "tests/**/*.ts"]
 }
