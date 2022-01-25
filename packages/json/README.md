@@ -1,5 +1,7 @@
 <div align="center">
 
+![Josh Logo](https://evie.codes/josh-light.png)
+
 # @joshdb/json
 
 **A provider for `@joshdb/core`**
