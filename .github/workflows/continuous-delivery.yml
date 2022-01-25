@@ -101,6 +101,7 @@ jobs:
           echo -e "\n# Move the generated files to the newly-checked-out repo, to be committed and pushed"
           rsync -vaI packages/json/package.json out/
           rsync -vaI packages/json/README.md out/
+          rsync -vaI LICENSE out/
           rsync -vaI packages/json/dist/ out/dist
 
           echo -e "\n# Removing TSC incremental file"
