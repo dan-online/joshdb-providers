@@ -5,11 +5,12 @@
   "author": "Évelyne Lachance <eslachance@gmail.com> (https://evie.codes/)",
   "contributors": [
     "DanCodes <dan@dancodes.online> (https://dancodes.online/)",
-    "RealShadowNova <real.shadow.nova@gmail.com>"
+    "Hezekiah Hendry <real.shadow.nova@gmail.com>"
   ],
   "license": "Apache-2.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "typedocMain": "src/index.ts",
   "scripts": {
     "test": "jest --verbose",
     "lint": "eslint src tests --ext ts --fix -c ../../.eslintrc",
@@ -20,11 +21,11 @@
     "@joshdb/core": "RealShadowNova/joshdb-core#build",
     "@realware/utilities": "^2.0.2",
     "@sapphire/utilities": "^3.2.1",
-    "mongoose": "^6.1.7"
+    "mongoose": "^6.1.8"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/josh-development/providers"
+    "url": "git+https://github.com/josh-development/providers.git"
   },
   "files": [
     "dist",
