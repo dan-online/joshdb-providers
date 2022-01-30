@@ -39,32 +39,50 @@ npm i @joshdb/mongo
 
 ```typescript
 interface Options {
+	/**
+	 * The name of the mongoose collection to use
+	 * @since 2.0.0
+	 */
+	collectionName?: string;
 
-		/**
-	 	* The name of the mongoose collection to use
-	 	*/
-		collectionName?: string;
-		
-		/**
-	 	* Sanitize collection name
-	 	*/
-		enforceCollectionName?: boolean;
+	/**
+	 * Sanitize collection name
+	 * @since 2.0.0
+	 */
+	enforceCollectionName?: boolean;
 
-		/**
-	 	* Authentication for the database if needed
-	 	*/
-		authentication?: Partial<Authentication> | string;
-
+	/**
+	 * Authentication for the database in string or object
+	 * @since 2.0.0
+	 */
+	authentication?: Partial<Authentication> | string;
 }
+
 interface Authentication {
-		user?: string;
-
-		password?: string;
-
-		dbName: string;
-
-		port: number;
-
-		host: string;
+	/**
+	 * The username for authentication.
+	 * @since 2.0.0
+	 */
+	user?: string;
+	/**
+	 * The password for authentication.
+	 * @since 2.0.0
+	 */
+	password?: string;
+	/**
+	 * The database name for authentication.
+	 * @since 2.0.0
+	 */
+	dbName: string;
+	/**
+	 * The database port for authentication.
+	 * @since 2.0.0
+	 */
+	port: number;
+	/**
+	 * The database host for authentication.
+	 * @since 2.0.0
+	 */
+	host: string;
 }
 ```
