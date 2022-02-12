@@ -33,3 +33,4 @@ docs/api.json
 # Ignore yarn 2-3 files
 .yarnrc.yml
 .yarn/
+.yarnrc
