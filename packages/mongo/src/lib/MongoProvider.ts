@@ -2,6 +2,7 @@ import {
   AutoKeyPayload,
   ClearPayload,
   DecPayload,
+  DeleteManyPayload,
   DeletePayload,
   EnsurePayload,
   EveryByHookPayload,
@@ -179,6 +180,14 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
     return payload;
   }
 
+  public async [Method.DeleteMany](payload: DeleteManyPayload): Promise<DeleteManyPayload> {
+    const { keys } = payload;
+
+    await this.collection.deleteMany({ key: { $in: keys } });
+
+    return payload;
+  }
+
   public async [Method.Ensure](payload: EnsurePayload<StoredValue>): Promise<EnsurePayload<StoredValue>> {
     const { key } = payload;
 
@@ -266,12 +275,12 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
     if (isFindByHookPayload(payload)) {
       const { hook } = payload;
 
-      for (const value of (await this.values({ method: Method.Values, data: [] })).data) {
-        const foundValue = await hook(value);
+      for (const [key, storedValue] of Object.entries((await this.getAll({ method: Method.GetAll, data: {} })).data)) {
+        const foundValue = await hook(storedValue);
 
         if (!foundValue) continue;
 
-        payload.data = value;
+        payload.data = [key, storedValue];
 
         break;
       }
@@ -290,9 +299,9 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
         return payload;
       }
 
-      for (const storedValue of (await this.values({ method: Method.Values, data: [] })).data) {
+      for (const [key, storedValue] of Object.entries((await this.getAll({ method: Method.GetAll, data: {} })).data)) {
         if (payload.data !== undefined) break;
-        if (value === (path.length === 0 ? storedValue : getFromObject(storedValue, path))) payload.data = storedValue;
+        if (value === (path.length === 0 ? storedValue : getFromObject(storedValue, path))) payload.data = [key, storedValue];
       }
     }
 
@@ -622,14 +631,12 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
   public async [Method.Set]<Value = StoredValue>(payload: SetPayload<Value>): Promise<SetPayload<Value>> {
     const { key, path, value } = payload;
 
-    const original = await this.get({ method: Method.Get, key, path });
-
     await this.collection.findOneAndUpdate(
       {
         key: { $eq: key }
       },
       {
-        $set: { value: this._serialize(path.length > 0 ? setToObject(original.data, path, value) : value) }
+        $set: { value: this._serialize(path.length > 0 ? setToObject((await this.get({ method: Method.Get, key, path })).data, path, value) : value) }
       },
       {
         upsert: true
@@ -642,9 +649,19 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
   public async [Method.SetMany]<Value = StoredValue>(payload: SetManyPayload<Value>): Promise<SetManyPayload<Value>> {
     const { data } = payload;
 
+    let idx = -1;
+
     for (const [{ key, path }, value] of data) {
-      if (!payload.overwrite && (await this.has({ method: Method.Has, key, path, data: false }))) {
-        return payload;
+      idx++;
+
+      if (!payload.overwrite) {
+        const original = (await this.get<Value>({ method: Method.Get, key, path })).data;
+
+        if (original !== undefined) {
+          payload.data[idx][1] = original;
+
+          continue;
+        }
       }
 
       await this.set<Value>({ method: Method.Set, key, path, value });
