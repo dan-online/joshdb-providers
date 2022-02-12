@@ -59,7 +59,8 @@ import {
   UpdatePayload,
   ValuesPayload
 } from '@joshdb/core';
-import { deleteFromObject, getFromObject } from '@realware/utilities';
+import { Serialize } from '@joshdb/serialize';
+import { deleteFromObject, getFromObject, hasFromObject, setToObject } from '@realware/utilities';
 import { isNullOrUndefined, isNumber, isPrimitive } from '@sapphire/utilities';
 import mongoose, { Model, Mongoose } from 'mongoose';
 import { generateMongoDoc } from './MongoDoc';
@@ -309,7 +310,9 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
       return payload;
     }
 
-    Reflect.set(payload, 'data', doc.value);
+    const deserialized = this._deserialize(doc.value);
+
+    Reflect.set(payload, 'data', deserialized);
 
     if (path.length > 0) payload.data = getFromObject(payload.data, path);
 
@@ -319,7 +322,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
   public async [Method.GetAll](payload: GetAllPayload<StoredValue>): Promise<GetAllPayload<StoredValue>> {
     const docs = (await this.collection.find({})) || [];
 
-    for (const doc of docs) Reflect.set(payload.data, doc.key, doc.value);
+    for (const doc of docs) Reflect.set(payload.data, doc.key, this._deserialize(doc.value));
 
     return payload;
   }
@@ -329,19 +332,19 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 
     const docs = (await this.collection.find({ key: { $in: keys } })) || [];
 
-    for (const doc of docs) Reflect.set(payload.data, doc.key, doc.value);
+    for (const doc of docs) Reflect.set(payload.data, doc.key, this._deserialize(doc.value));
 
     return payload;
   }
 
   public async [Method.Has](payload: HasPayload): Promise<HasPayload> {
     const { key, path } = payload;
-    let isThere;
+    let isThere = (await this.collection.exists({ key })) !== null;
 
-    if (path.length === 0) {
-      isThere = await this.collection.exists({ key });
-    } else {
-      isThere = await this.collection.exists({ key, [`value.${path.join('.')}`]: { $exists: true } });
+    if (path.length !== 0 && isThere) {
+      const value = await this.get({ method: Method.Get, key, path: [] });
+
+      isThere = hasFromObject(value.data, path);
     }
 
     payload.data = isThere;
@@ -539,17 +542,17 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
   }
 
   public async [Method.Random](payload: RandomPayload<StoredValue>): Promise<RandomPayload<StoredValue>> {
-    const docs = (await this.collection.aggregate([{ $sample: { size: 1 } }])) || [];
+    const docs: MongoDocType[] = (await this.collection.aggregate([{ $sample: { size: payload.count } }])) || [];
 
-    payload.data = docs.length > 0 ? docs[0].value : undefined;
+    payload.data = docs.length > 0 ? docs.map((doc) => this._deserialize(doc.value)) : undefined;
 
     return payload;
   }
 
   public async [Method.RandomKey](payload: RandomKeyPayload): Promise<RandomKeyPayload> {
-    const docs = (await this.collection.aggregate([{ $sample: { size: 1 } }])) || [];
+    const docs = (await this.collection.aggregate([{ $sample: { size: payload.count } }])) || [];
 
-    payload.data = docs.length > 0 ? docs[0].key : undefined;
+    payload.data = docs.length > 0 ? docs.map((doc) => doc.key) : undefined;
 
     return payload;
   }
@@ -619,12 +622,14 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
   public async [Method.Set]<Value = StoredValue>(payload: SetPayload<Value>): Promise<SetPayload<Value>> {
     const { key, path, value } = payload;
 
+    const original = await this.get({ method: Method.Get, key, path });
+
     await this.collection.findOneAndUpdate(
       {
         key: { $eq: key }
       },
       {
-        $set: { [`${path.length > 0 ? `value.${path.join('.')}` : 'value'}`]: value }
+        $set: { value: this._serialize(path.length > 0 ? setToObject(original.data, path, value) : value) }
       },
       {
         upsert: true
@@ -637,7 +642,13 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
   public async [Method.SetMany]<Value = StoredValue>(payload: SetManyPayload<Value>): Promise<SetManyPayload<Value>> {
     const { data } = payload;
 
-    for (const [{ key, path }, value] of data) await this.set<Value>({ method: Method.Set, key, path, value });
+    for (const [{ key, path }, value] of data) {
+      if (!payload.overwrite && (await this.has({ method: Method.Has, key, path, data: false }))) {
+        return payload;
+      }
+
+      await this.set<Value>({ method: Method.Set, key, path, value });
+    }
 
     return payload;
   }
@@ -696,8 +707,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
   public async [Method.Values](payload: ValuesPayload<StoredValue>): Promise<ValuesPayload<StoredValue>> {
     const docs = (await this.collection.find({})) || [];
 
-    // @ts-expect-error 2345
-    for (const doc of docs) payload.data.push(doc.value);
+    for (const doc of docs) payload.data.push(this._deserialize(doc.value));
 
     return payload;
   }
@@ -705,7 +715,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
   private get client(): Mongoose {
     if (isNullOrUndefined(this._client))
       throw new JoshError({
-        message: 'Client is not connected, most likely due to `init` not being called.',
+        message: 'Client is not connected, most likely due to `init` not being called or the server not being available',
         identifier: MongoProvider.Identifiers.NotConnected
       });
 
@@ -715,11 +725,19 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
   private get collection(): Model<MongoDocType> {
     if (isNullOrUndefined(this._collection))
       throw new JoshError({
-        message: 'Client is not connected, most likely due to `init` not being called.',
+        message: 'Client is not connected, most likely due to `init` not being called or the server not being available',
         identifier: MongoProvider.Identifiers.NotConnected
       });
 
     return this._collection;
+  }
+
+  private _deserialize(value: string): StoredValue {
+    return new Serialize({ json: JSON.parse(value) }).toRaw<StoredValue>();
+  }
+
+  private _serialize<Value = StoredValue>(value: StoredValue | Value) {
+    return JSON.stringify(new Serialize({ raw: value }).toJSON());
   }
 
   public static defaultAuthentication: MongoProvider.Authentication = { dbName: 'josh', host: 'localhost', port: 27017 };
