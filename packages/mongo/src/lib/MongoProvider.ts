@@ -319,9 +319,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
       return payload;
     }
 
-    const deserialized = this._deserialize(doc.value);
-
-    Reflect.set(payload, 'data', deserialized);
+    Reflect.set(payload, 'data', this.deserialize(doc.value));
 
     if (path.length > 0) payload.data = getFromObject(payload.data, path);
 
@@ -331,7 +329,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
   public async [Method.GetAll](payload: GetAllPayload<StoredValue>): Promise<GetAllPayload<StoredValue>> {
     const docs = (await this.collection.find({})) || [];
 
-    for (const doc of docs) Reflect.set(payload.data, doc.key, this._deserialize(doc.value));
+    for (const doc of docs) Reflect.set(payload.data, doc.key, this.deserialize(doc.value));
 
     return payload;
   }
@@ -341,7 +339,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 
     const docs = (await this.collection.find({ key: { $in: keys } })) || [];
 
-    for (const doc of docs) Reflect.set(payload.data, doc.key, this._deserialize(doc.value));
+    for (const doc of docs) Reflect.set(payload.data, doc.key, this.deserialize(doc.value));
 
     return payload;
   }
@@ -553,7 +551,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
   public async [Method.Random](payload: RandomPayload<StoredValue>): Promise<RandomPayload<StoredValue>> {
     const docs: MongoDocType[] = (await this.collection.aggregate([{ $sample: { size: payload.count } }])) || [];
 
-    payload.data = docs.length > 0 ? docs.map((doc) => this._deserialize(doc.value)) : undefined;
+    if (docs.length > 0) payload.data = docs.map((doc) => this.deserialize(doc.value));
 
     return payload;
   }
@@ -561,7 +559,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
   public async [Method.RandomKey](payload: RandomKeyPayload): Promise<RandomKeyPayload> {
     const docs = (await this.collection.aggregate([{ $sample: { size: payload.count } }])) || [];
 
-    payload.data = docs.length > 0 ? docs.map((doc) => doc.key) : undefined;
+    if (docs.length > 0) payload.data = docs.map((doc) => doc.key);
 
     return payload;
   }
@@ -636,7 +634,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
         key: { $eq: key }
       },
       {
-        $set: { value: this._serialize(path.length > 0 ? setToObject((await this.get({ method: Method.Get, key, path })).data, path, value) : value) }
+        $set: { value: this.serialize(path.length > 0 ? setToObject((await this.get({ method: Method.Get, key, path })).data, path, value) : value) }
       },
       {
         upsert: true
@@ -649,16 +647,14 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
   public async [Method.SetMany]<Value = StoredValue>(payload: SetManyPayload<Value>): Promise<SetManyPayload<Value>> {
     const { data } = payload;
 
-    let idx = -1;
-
-    for (const [{ key, path }, value] of data) {
-      idx++;
+    for (let i = 0; i < data.length; i++) {
+      const [{ key, path }, value] = data[i];
 
       if (!payload.overwrite) {
         const original = (await this.get<Value>({ method: Method.Get, key, path })).data;
 
         if (original !== undefined) {
-          payload.data[idx][1] = original;
+          payload.data[i][1] = original;
 
           continue;
         }
@@ -724,7 +720,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
   public async [Method.Values](payload: ValuesPayload<StoredValue>): Promise<ValuesPayload<StoredValue>> {
     const docs = (await this.collection.find({})) || [];
 
-    for (const doc of docs) payload.data.push(this._deserialize(doc.value));
+    for (const doc of docs) payload.data.push(this.deserialize(doc.value));
 
     return payload;
   }
@@ -749,11 +745,11 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
     return this._collection;
   }
 
-  private _deserialize(value: string): StoredValue {
+  private deserialize(value: string): StoredValue {
     return new Serialize({ json: JSON.parse(value) }).toRaw<StoredValue>();
   }
 
-  private _serialize<Value = StoredValue>(value: StoredValue | Value) {
+  private serialize<Value = StoredValue>(value: StoredValue | Value) {
     return JSON.stringify(new Serialize({ raw: value }).toJSON());
   }
 
