@@ -4,7 +4,7 @@ import ora from 'ora';
 import { JSONProvider } from '../packages/json/dist/index.js';
 import { MongoProvider } from '../packages/mongo/dist/index.js';
 
-const cardCount = 100;
+const cardCount = 1000;
 
 function getAverage(arr) {
   return `${(arr.reduce((prev, curr) => (prev += curr), 0) / arr.length).toFixed(2)}μs`;

@@ -533,13 +533,17 @@ export class JSONProvider<StoredValue = unknown> extends JoshProvider<StoredValu
 
     payload.data = [];
 
-    const data: [string, StoredValue][] = [];
-    const entries = await this.handler.entries();
+    if (duplicates) {
+      const keys = await this.handler.keys();
 
-    for (let i = 0; i < count; i++)
-      data.push(duplicates ? entries[Math.floor(Math.random() * entries.length)] : await this.randomEntriesWithDuplicates(data));
+      payload.data.push((await this.handler.get(keys[Math.floor(Math.random() * keys.length)]))!);
+    } else {
+      const data: [string, StoredValue][] = [];
 
-    payload.data = data.map(([, value]) => value);
+      for (let i = 0; i < count; i++) data.push(await this.randomEntriesWithDuplicates(data));
+
+      payload.data = data.map(([, value]) => value);
+    }
 
     return payload;
   }
