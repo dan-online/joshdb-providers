@@ -1,30 +1,30 @@
 import { faker } from '@faker-js/faker';
 import { Josh } from '@joshdb/core';
 import ora from 'ora';
-import { JSONProvider } from '../../packages/json/dist/index.js';
-import { MongoProvider } from '../../packages/mongo/dist/index.js';
+import { JSONProvider } from '../packages/json/dist/index.js';
+import { MongoProvider } from '../packages/mongo/dist/index.js';
 
 const num = 100;
 
-function getAvg(arr) {
-  return (arr.reduce((prev, curr) => (prev += curr), 0) / arr.length).toFixed(2);
+function getAverage(arr) {
+  return `${(arr.reduce((prev, curr) => (prev += curr), 0) / arr.length).toFixed(2)}μs`;
 }
 
 function getMax(arr) {
-  return Math.max(...arr).toFixed(2);
+  return `${Math.max(...arr).toFixed(2)}μs`;
 }
 
 function getMin(arr) {
-  return Math.min(...arr).toFixed(2);
+  return `${Math.min(...arr).toFixed(2)}μs`;
 }
 
 function getTotal(arr) {
-  return arr.reduce((prev, curr) => (prev += curr), 0).toFixed(2);
+  return `${arr.reduce((prev, curr) => (prev += curr), 0).toFixed(2)}μs`;
 }
 
 function getAll(arr) {
   return {
-    Avg: getAvg(arr),
+    Average: getAverage(arr),
     Max: getMax(arr),
     Min: getMin(arr),
     Total: getTotal(arr)
@@ -85,15 +85,15 @@ async function runDbTest(name, db) {
 
   const get = await runMethod('Get', (card) => db.get(card.id), data);
 
-  const getRandom = await runMethod('Random', (card) => db.random(), data);
+  const getRandom = await runMethod('Random', () => db.random(), data);
 
   const add = await runMethod('Math', (card) => db.math(`${card.id}.net`, '+', 1), data);
 
   const del = await runMethod('Delete', (card) => db.delete(card.id), data);
 
-  const setMany = await runMethod('SetMany', (card) => db.setMany(data.map((d) => [{ key: d.id }, d])), data, 5);
+  const setMany = await runMethod('SetMany', () => db.setMany(data.map((d) => [{ key: d.id }, d])), data, 5);
 
-  const delMany = await runMethod('DelMany', (card) => db.deleteMany(data.map((d) => d.id)), data, 1);
+  const delMany = await runMethod('DeleteMany', () => db.deleteMany(data.map((d) => d.id)), data, 1);
 
   const clear = await runMethod(
     'Clear',
@@ -103,28 +103,29 @@ async function runDbTest(name, db) {
     () => db.setMany(data.map((d) => [{ key: d.id }, d]))
   );
 
-  console.log(name);
+  console.log('\n');
+  ora(name).succeed();
   console.table({
     Set: getAll(set),
     Get: getAll(get),
-    Del: getAll(del),
+    Delete: getAll(del),
     Math: getAll(add),
     Random: getAll(getRandom),
     SetMany: getAll(setMany),
-    DelMany: getAll(delMany),
+    DeleteMany: getAll(delMany),
     Clear: getAll(clear)
   });
 }
 
 const mongoDb = new Josh({
-  name: 'benchjosh',
+  name: 'bench-josh',
   provider: new MongoProvider({
-    collectionName: 'benchjosh'
+    collectionName: 'bench-josh'
   })
 });
 
 const jsonDb = new Josh({
-  name: 'benchjosh',
+  name: 'bench-josh',
   provider: new JSONProvider({
     dataDirectoryName: '.bench'
   })
@@ -132,6 +133,6 @@ const jsonDb = new Josh({
 
 void (async () => {
   await runDbTest('MongoDB', mongoDb);
-  await runDbTest('Json', jsonDb);
+  await runDbTest('JSON', jsonDb);
   process.exit();
 })();
