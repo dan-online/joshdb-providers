@@ -4,7 +4,7 @@ import ora from 'ora';
 import { JSONProvider } from '../packages/json/dist/index.js';
 import { MongoProvider } from '../packages/mongo/dist/index.js';
 
-const num = 100;
+const cardCount = 100;
 
 function getAverage(arr) {
   return `${(arr.reduce((prev, curr) => (prev += curr), 0) / arr.length).toFixed(2)}μs`;
@@ -31,12 +31,12 @@ function getAll(arr) {
   };
 }
 
-async function runMethod(name, meth, data, num = null, before = null) {
+async function runMethod(name, meth, data, cardCount = null, before = null) {
   const arrDataSpinner = ora(`${name} data`).start();
 
   const arr = [];
 
-  if (num === null) {
+  if (cardCount === null) {
     for (const card of data) {
       if (before) await before();
 
@@ -48,12 +48,12 @@ async function runMethod(name, meth, data, num = null, before = null) {
       arrDataSpinner.render();
     }
   } else {
-    for (let i = 0; i < num; i++) {
+    for (let i = 0; i < cardCount; i++) {
       const start = performance.now();
 
       await meth(data[i]);
       arr.push(performance.now() - start);
-      arrDataSpinner.text = `${name} ${i + 1}/${num}`;
+      arrDataSpinner.text = `${name} ${i + 1}/${cardCount}`;
       arrDataSpinner.render();
     }
   }
@@ -73,13 +73,13 @@ async function runDbTest(name, db) {
 
   const gatherDataSpinner = ora('Gathering data').start();
 
-  for (let i = 0; i < num; i++) {
+  for (let i = 0; i < cardCount; i++) {
     data.push({ ...faker.helpers.createCard(), id: await db.autoKey(), net: 0 });
-    gatherDataSpinner.text = `Loaded ${i + 1}/${num} cards`;
+    gatherDataSpinner.text = `Loaded ${i + 1}/${cardCount} cards`;
     gatherDataSpinner.render();
   }
 
-  gatherDataSpinner.succeed(`Loaded ${num} random cards`);
+  gatherDataSpinner.succeed(`Loaded ${cardCount} random cards`);
 
   const set = await runMethod('Set', (card) => db.set(card.id, card), data);
 
@@ -99,7 +99,7 @@ async function runDbTest(name, db) {
     'Clear',
     () => db.clear(),
     data,
-    num,
+    cardCount,
     () => db.setMany(data.map((d) => [{ key: d.id }, d]))
   );
 
