@@ -2,6 +2,7 @@ import {
   AutoKeyPayload,
   ClearPayload,
   DecPayload,
+  DeleteManyPayload,
   DeletePayload,
   EnsurePayload,
   EveryByHookPayload,
@@ -164,6 +165,14 @@ export class JSONProvider<StoredValue = unknown> extends JoshProvider<StoredValu
     return payload;
   }
 
+  public async [Method.DeleteMany](payload: DeleteManyPayload): Promise<DeleteManyPayload> {
+    for (const key of payload.keys) {
+      await this.delete({ method: Method.Delete, key, path: [] });
+    }
+
+    return payload;
+  }
+
   public async [Method.Ensure](payload: EnsurePayload<StoredValue>): Promise<EnsurePayload<StoredValue>> {
     const { key } = payload;
 
@@ -251,8 +260,8 @@ export class JSONProvider<StoredValue = unknown> extends JoshProvider<StoredValu
     if (isFindByHookPayload(payload)) {
       const { hook } = payload;
 
-      for (const value of await this.handler.values()) {
-        const foundValue = await hook(value);
+      for (const value of await this.handler.entries()) {
+        const foundValue = await hook(value[1]);
 
         if (!foundValue) continue;
 
@@ -275,7 +284,7 @@ export class JSONProvider<StoredValue = unknown> extends JoshProvider<StoredValu
         return payload;
       }
 
-      for (const storedValue of await this.handler.values()) {
+      for (const storedValue of await this.handler.entries()) {
         if (payload.data !== undefined) break;
         if (value === (path.length === 0 ? storedValue : getFromObject(storedValue, path))) payload.data = storedValue;
       }

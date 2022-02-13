@@ -471,6 +471,11 @@
     minimatch "^3.0.4"
     strip-json-comments "^3.1.1"
 
+"@faker-js/faker@^6.0.0-alpha.6":
+  version "6.0.0-alpha.6"
+  resolved "https://registry.yarnpkg.com/@faker-js/faker/-/faker-6.0.0-alpha.6.tgz#1724c4f67b62d2a14e76781675179c2f02dafbae"
+  integrity sha512-+jatKq8wYwOgCpVQ0wE4t9BglS16qJH/Nu4WjPU+ABTywivTY8BCsD1XIZhw9iXDq3t1InyiXmz+R70TcUMbrg==
+
 "@favware/npm-deprecate@^1.0.4":
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/@favware/npm-deprecate/-/npm-deprecate-1.0.4.tgz#fe73ed7ddb8f8b96ba1436b9cb047eeda2d2497c"
