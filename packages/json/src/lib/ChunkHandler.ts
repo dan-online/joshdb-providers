@@ -291,7 +291,7 @@ export class ChunkHandler<StoredValue = unknown> {
     for (const chunk of index.chunks.filter((chunk) => !chunk.keys.length)) {
       const file = this.getChunkFile(chunk.id);
 
-      await file.delete();
+      if (file.exists) await file.delete();
 
       Reflect.deleteProperty(this.files, chunk.id);
     }
