@@ -166,9 +166,9 @@ export class JSONProvider<StoredValue = unknown> extends JoshProvider<StoredValu
   }
 
   public async [Method.DeleteMany](payload: DeleteManyPayload): Promise<DeleteManyPayload> {
-    for (const key of payload.keys) {
-      await this.delete({ method: Method.Delete, key, path: [] });
-    }
+    const { keys } = payload;
+
+    await this.handler.deleteMany(keys);
 
     return payload;
   }
@@ -649,14 +649,19 @@ export class JSONProvider<StoredValue = unknown> extends JoshProvider<StoredValu
   }
 
   public async [Method.SetMany]<Value = StoredValue>(payload: SetManyPayload<Value>): Promise<SetManyPayload<Value>> {
-    const { data } = payload;
+    const { data, overwrite } = payload;
 
     const withPath = data.filter(([{ path }]) => path.length > 0);
     const withoutPath = data.filter(([{ path }]) => path.length === 0);
 
-    for (const [{ key, path }, value] of withPath) await this.set<Value>({ method: Method.Set, key, path, value });
+    for (const [{ key, path }, value] of withPath)
+      if (overwrite || !(await this.handler.has(key))) await this.set<Value>({ method: Method.Set, key, path, value });
 
-    if (withoutPath.length > 0) await this.handler.setMany(withoutPath.map(([{ key }, value]) => [key, value] as unknown as [string, StoredValue]));
+    if (withoutPath.length > 0)
+      await this.handler.setMany(
+        withoutPath.map(([{ key }, value]) => [key, value] as unknown as [string, StoredValue]),
+        overwrite
+      );
 
     return payload;
   }
