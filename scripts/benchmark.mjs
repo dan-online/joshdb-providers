@@ -36,6 +36,7 @@ async function runMethod(name, meth, data, forcedCount = null, before = null) {
   const arrDataSpinner = ora(`${name} 0/${forcedCount || data.length}`).start();
 
   const arr = [];
+  let lastDate = new Date();
 
   if (forcedCount === null) {
     for (const card of data) {
@@ -47,7 +48,10 @@ async function runMethod(name, meth, data, forcedCount = null, before = null) {
       arr.push(performance.now() - start);
       arrDataSpinner.text = `${name} ${arr.length}/${data.length}`;
 
-      if (showUpdates) arrDataSpinner.render();
+      if (showUpdates && new Date() - lastDate > 1000) {
+        arrDataSpinner.render();
+        lastDate = new Date();
+      }
     }
   } else {
     for (let i = 0; i < forcedCount; i++) {
@@ -57,7 +61,10 @@ async function runMethod(name, meth, data, forcedCount = null, before = null) {
       arr.push(performance.now() - start);
       arrDataSpinner.text = `${name} ${i + 1}/${forcedCount}`;
 
-      if (showUpdates) arrDataSpinner.render();
+      if (showUpdates && new Date() - lastDate > 1000) {
+        arrDataSpinner.render();
+        lastDate = new Date();
+      }
     }
   }
 
@@ -68,10 +75,11 @@ async function runMethod(name, meth, data, forcedCount = null, before = null) {
 
 async function runDbTest(name, db) {
   const data = [];
-  const loadDatabaseSpinner = ora('Loading database').start();
+  const loadDatabaseSpinner = ora(`Loading database: ${name}`).start();
 
   await db.init();
   await db.clear();
+
   loadDatabaseSpinner.succeed();
 
   const gatherDataSpinner = ora('Gathering data').start();
@@ -89,13 +97,37 @@ async function runDbTest(name, db) {
 
   const get = await runMethod('Get', (card) => db.get(card.id), data);
 
-  const getRandom = await runMethod('Random', () => db.random(), data);
+  const getRandom = await runMethod('Random', () => db.random({ count: 2, duplicates: false }), data);
+
+  const getRandomNoDupes = await runMethod('Random (dupes)', () => db.random({ count: 2, duplicates: true }), data);
+
+  const randomKey = await runMethod('RandomKey', () => db.randomKey({}), data);
 
   const add = await runMethod('Math', (card) => db.math(`${card.id}.net`, '+', 1), data);
 
   const del = await runMethod('Delete', (card) => db.delete(card.id), data);
 
-  const setMany = await runMethod('SetMany', () => db.setMany(data.map((d) => [{ key: d.id }, d])), data, 5);
+  const setMany = await runMethod(
+    'SetMany',
+    () =>
+      db.setMany(
+        data.map((d) => [{ key: d.id }, d]),
+        false
+      ),
+    data,
+    5
+  );
+
+  const setManyOverwrite = await runMethod(
+    'SetMany (ovr)',
+    () =>
+      db.setMany(
+        data.map((d) => [{ key: d.id }, d]),
+        true
+      ),
+    data,
+    5
+  );
 
   const delMany = await runMethod('DeleteMany', () => db.deleteMany(data.map((d) => d.id)), data, 1);
 
@@ -114,8 +146,11 @@ async function runDbTest(name, db) {
     Get: getAll(get),
     Delete: getAll(del),
     Math: getAll(add),
-    Random: getAll(getRandom),
+    Random: getAll(getRandomNoDupes),
+    'Random (dupes)': getAll(getRandom),
+    RandomKey: getAll(randomKey),
     SetMany: getAll(setMany),
+    'SetMany (ovr)': getAll(setManyOverwrite),
     DeleteMany: getAll(delMany),
     Clear: getAll(clear)
   });

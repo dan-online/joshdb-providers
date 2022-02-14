@@ -63,7 +63,7 @@ import {
 import { Serialize } from '@joshdb/serialize';
 import { deleteFromObject, getFromObject, hasFromObject, setToObject } from '@realware/utilities';
 import { isNullOrUndefined, isNumber, isPrimitive } from '@sapphire/utilities';
-import mongoose, { Model, Mongoose } from 'mongoose';
+import mongoose, { Model, Mongoose, PipelineStage } from 'mongoose';
 import { generateMongoDoc } from './MongoDoc';
 import type { MongoDocType } from './MongoDocType';
 import { MongoProviderError } from './MongoProviderError';
@@ -549,7 +549,13 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
   }
 
   public async [Method.Random](payload: RandomPayload<StoredValue>): Promise<RandomPayload<StoredValue>> {
-    const docs: MongoDocType[] = (await this.collection.aggregate([{ $sample: { size: payload.count } }])) || [];
+    const aggr: PipelineStage[] = [{ $sample: { size: payload.count } }];
+
+    // if (!payload.duplicates) {
+    //   aggr.push(...[{ $group: { _id: '$key' } }]); Yet to be implemented
+    // }
+
+    const docs: MongoDocType[] = (await this.collection.aggregate(aggr)) || [];
 
     if (docs.length > 0) payload.data = docs.map((doc) => this.deserialize(doc.value));
 
@@ -647,7 +653,6 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
   public async [Method.SetMany]<Value = StoredValue>(payload: SetManyPayload<Value>): Promise<SetManyPayload<Value>> {
     const { data } = payload;
     const operations = [];
-
 
     for (let i = 0; i < data.length; i++) {
       const [{ key, path }, value] = data[i];
