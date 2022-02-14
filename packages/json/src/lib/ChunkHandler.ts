@@ -159,6 +159,57 @@ export class ChunkHandler<StoredValue = unknown> {
     this.queue.shift();
   }
 
+  public async setMany(entries: [string, StoredValue][]): Promise<void> {
+    await this.queue.wait();
+
+    const index = await this.index.fetch();
+
+    this.queue.shift();
+
+    const { maxChunkSize } = this.options;
+
+    for (const chunk of index.chunks) {
+      const file = this.getChunkFile(chunk.id);
+      const data = (await file.fetch()) ?? {};
+
+      for (const [key, value] of entries.filter(([key]) => chunk.keys.includes(key))) data[key] = value;
+
+      entries = entries.filter(([key]) => !chunk.keys.includes(key));
+
+      for (const [key, value] of entries) {
+        if (Object.keys(data).length >= maxChunkSize) break;
+
+        data[key] = value;
+
+        entries = entries.filter(([k]) => k !== key);
+      }
+
+      await file.save(data);
+    }
+
+    if (entries.length > 0) {
+      await this.queue.wait();
+
+      const chunks = [];
+
+      while (entries.length > 0) chunks.push(entries.splice(0, maxChunkSize));
+
+      for (const chunk of chunks) {
+        const chunkId = this.snowflake.generate().toString();
+
+        index.chunks.push({ keys: chunk.map(([key]) => key), id: chunkId });
+
+        await this.index.save(index);
+
+        const file = this.getChunkFile(chunkId);
+
+        await file.save(chunk.reduce<Record<string, StoredValue>>((data, [key, value]) => ({ ...data, [key]: value }), {}));
+      }
+
+      this.queue.shift();
+    }
+  }
+
   public async delete(key: string): Promise<boolean> {
     const chunkId = await this.locateChunkId(key);
 

@@ -651,7 +651,12 @@ export class JSONProvider<StoredValue = unknown> extends JoshProvider<StoredValu
   public async [Method.SetMany]<Value = StoredValue>(payload: SetManyPayload<Value>): Promise<SetManyPayload<Value>> {
     const { data } = payload;
 
-    for (const [{ key, path }, value] of data) await this.set<Value>({ method: Method.Set, key, path, value });
+    const withPath = data.filter(([{ path }]) => path.length > 0);
+    const withoutPath = data.filter(([{ path }]) => path.length === 0);
+
+    for (const [{ key, path }, value] of withPath) await this.set<Value>({ method: Method.Set, key, path, value });
+
+    if (withoutPath.length > 0) await this.handler.setMany(withoutPath.map(([{ key }, value]) => [key, value] as unknown as [string, StoredValue]));
 
     return payload;
   }

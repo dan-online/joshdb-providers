@@ -140,7 +140,9 @@ async function runDbTest(name, db) {
   );
 
   console.log('\n');
+
   ora(name).succeed();
+
   console.table({
     Set: getAll(set),
     Get: getAll(get),
