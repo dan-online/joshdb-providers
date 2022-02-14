@@ -648,6 +648,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
     const { data } = payload;
     const operations = [];
 
+
     for (let i = 0; i < data.length; i++) {
       const [{ key, path }, value] = data[i];
 
@@ -661,7 +662,6 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
         }
       }
 
-      // await this.set<Value>({ method: Method.Set, key, path, value });
       operations.push({
         updateOne: {
           filter: { key },
