@@ -646,6 +646,7 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
 
   public async [Method.SetMany]<Value = StoredValue>(payload: SetManyPayload<Value>): Promise<SetManyPayload<Value>> {
     const { data } = payload;
+    const operations = [];
 
     for (let i = 0; i < data.length; i++) {
       const [{ key, path }, value] = data[i];
@@ -660,8 +661,21 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
         }
       }
 
-      await this.set<Value>({ method: Method.Set, key, path, value });
+      // await this.set<Value>({ method: Method.Set, key, path, value });
+      operations.push({
+        updateOne: {
+          filter: { key },
+          upsert: true,
+          update: {
+            $set: {
+              value: this.serialize(path.length > 0 ? setToObject((await this.get({ method: Method.Get, key, path: [] })).data, path, value) : value)
+            }
+          }
+        }
+      });
     }
+
+    await this.collection.bulkWrite(operations);
 
     return payload;
   }

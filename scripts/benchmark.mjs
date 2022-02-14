@@ -4,7 +4,8 @@ import ora from 'ora';
 import { JSONProvider } from '../packages/json/dist/index.js';
 import { MongoProvider } from '../packages/mongo/dist/index.js';
 
-const cardCount = 100;
+const cardCount = 1000;
+const showUpdates = true; // slightly more performance when false
 
 function getAverage(arr) {
   return `${(arr.reduce((prev, curr) => (prev += curr), 0) / arr.length).toFixed(2)}μs`;
@@ -31,12 +32,12 @@ function getAll(arr) {
   };
 }
 
-async function runMethod(name, meth, data, cardCount = null, before = null) {
-  const arrDataSpinner = ora(`${name} data`).start();
+async function runMethod(name, meth, data, forcedCount = null, before = null) {
+  const arrDataSpinner = ora(`${name} 0/${forcedCount || data.length}`).start();
 
   const arr = [];
 
-  if (cardCount === null) {
+  if (forcedCount === null) {
     for (const card of data) {
       if (before) await before();
 
@@ -45,16 +46,18 @@ async function runMethod(name, meth, data, cardCount = null, before = null) {
       await meth(card);
       arr.push(performance.now() - start);
       arrDataSpinner.text = `${name} ${arr.length}/${data.length}`;
-      arrDataSpinner.render();
+
+      if (showUpdates) arrDataSpinner.render();
     }
   } else {
-    for (let i = 0; i < cardCount; i++) {
+    for (let i = 0; i < forcedCount; i++) {
       const start = performance.now();
 
       await meth(data[i]);
       arr.push(performance.now() - start);
-      arrDataSpinner.text = `${name} ${i + 1}/${cardCount}`;
-      arrDataSpinner.render();
+      arrDataSpinner.text = `${name} ${i + 1}/${forcedCount}`;
+
+      if (showUpdates) arrDataSpinner.render();
     }
   }
 
@@ -76,7 +79,8 @@ async function runDbTest(name, db) {
   for (let i = 0; i < cardCount; i++) {
     data.push({ ...faker.helpers.createCard(), id: await db.autoKey(), net: 0 });
     gatherDataSpinner.text = `Loaded ${i + 1}/${cardCount} cards`;
-    gatherDataSpinner.render();
+
+    if (showUpdates) gatherDataSpinner.render();
   }
 
   gatherDataSpinner.succeed(`Loaded ${cardCount} random cards`);
