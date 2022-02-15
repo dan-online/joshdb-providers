@@ -1581,7 +1581,11 @@ export function runProviderTest<
           expect(method).toBe(Method.SetMany);
           expect(trigger).toBeUndefined();
           expect(error).toBeUndefined();
-          expect(data).toEqual([[{ key: 'test:setMany', path: [] }, 'value']]);
+          expect(data).toEqual([[{ key: 'test:setMany', path: [] }, 'value-overwritten']]);
+
+          const getAfter = await provider.get({ method: Method.Get, key: 'test:setMany', path: [] });
+
+          expect(getAfter.data).toBe('value');
         });
       });
 

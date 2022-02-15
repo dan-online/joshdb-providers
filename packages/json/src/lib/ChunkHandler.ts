@@ -159,7 +159,7 @@ export class ChunkHandler<StoredValue = unknown> {
     this.queue.shift();
   }
 
-  public async setMany(entries: [string, StoredValue][], overwrite = true): Promise<void> {
+  public async setMany(entries: [string, StoredValue][], overwrite: boolean): Promise<void> {
     await this.queue.wait();
 
     const index = await this.index.fetch();
@@ -172,19 +172,18 @@ export class ChunkHandler<StoredValue = unknown> {
       const file = this.getChunkFile(chunk.id);
       const data = (await file.fetch()) ?? {};
 
-      if (overwrite) for (const [key, value] of entries.filter(([key]) => chunk.keys.includes(key))) data[key] = value;
+      for (const [key, value] of entries) if (overwrite || !(key in data)) data[key] = value;
 
       entries = entries.filter(([key]) => !chunk.keys.includes(key));
 
-      for (const [key, value] of entries) {
-        if (Object.keys(data).length >= maxChunkSize) break;
+      if (Object.keys(data).length < maxChunkSize)
+        for (const [key, value] of entries) {
+          if (Object.keys(data).length >= maxChunkSize) break;
 
-        data[key] = value;
+          data[key] = value;
 
-        entries = entries.filter(([k]) => k !== key);
-      }
-
-      await file.save(data);
+          entries = entries.filter(([k]) => k !== key);
+        }
     }
 
     if (entries.length > 0) {

@@ -284,9 +284,9 @@ export class JSONProvider<StoredValue = unknown> extends JoshProvider<StoredValu
         return payload;
       }
 
-      for (const storedValue of await this.handler.entries()) {
+      for (const [key, storedValue] of await this.handler.entries()) {
         if (payload.data !== undefined) break;
-        if (value === (path.length === 0 ? storedValue : getFromObject(storedValue, path))) payload.data = storedValue;
+        if (value === (path.length === 0 ? storedValue : getFromObject(storedValue, path))) payload.data = [key, storedValue];
       }
     }
 
