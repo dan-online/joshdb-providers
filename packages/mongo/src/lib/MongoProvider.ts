@@ -654,17 +654,11 @@ export class MongoProvider<StoredValue = unknown> extends JoshProvider<StoredVal
     const { data } = payload;
     const operations = [];
 
-    for (let i = 0; i < data.length; i++) {
-      const [{ key, path }, value] = data[i];
-
+    for (const [{ key, path }, value] of data) {
       if (!payload.overwrite) {
-        const original = (await this.get<Value>({ method: Method.Get, key, path })).data;
+        const found = (await this.has({ method: Method.Has, key, path, data: false })).data;
 
-        if (original !== undefined) {
-          payload.data[i][1] = original;
-
-          continue;
-        }
+        if (found) continue;
       }
 
       operations.push({
